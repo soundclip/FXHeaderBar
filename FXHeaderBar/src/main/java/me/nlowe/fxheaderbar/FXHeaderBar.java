@@ -14,18 +14,17 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 package me.nlowe.fxheaderbar;
 
+import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.geometry.HPos;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.Separator;
-import javafx.scene.control.ToolBar;
+import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
@@ -50,6 +49,7 @@ public class FXHeaderBar extends ToolBar
 
     private final HBox leftBox = new HBox();
     private final HBox rightBox = new HBox();
+    private final HBox windowControls = new HBox();
 
     private final Pane titleNodeContainer = new Pane(defaultTitlePane);
     private final ObjectProperty<Node> titleNode = new SimpleObjectProperty<>(defaultTitlePane);
@@ -85,6 +85,7 @@ public class FXHeaderBar extends ToolBar
         Label titleLabel = new Label();
         titleLabel.textProperty().bind(title);
         titleLabel.getStyleClass().add("title");
+        titleLabel.setTextOverrun(OverrunStyle.WORD_ELLIPSIS);
 
         subtitle.addListener((prop, oldValue, newVlaue) -> {
             if(defaultTitlePane.getChildren().size() == 1)
@@ -92,11 +93,15 @@ public class FXHeaderBar extends ToolBar
                 Label subtitleLabel = new Label();
                 subtitleLabel.textProperty().bind(subtitle);
                 subtitleLabel.getStyleClass().add("subtitle");
+                subtitleLabel.setTextOverrun(OverrunStyle.LEADING_ELLIPSIS);
                 defaultTitlePane.add(subtitleLabel, 0, 1);
             }
         });
 
         defaultTitlePane.add(titleLabel, 0, 0);
+        defaultTitlePane.minWidthProperty().bind(titleNodeContainer.minWidthProperty());
+        defaultTitlePane.prefWidthProperty().bind(titleNodeContainer.prefWidthProperty());
+        defaultTitlePane.maxWidthProperty().bind(titleNodeContainer.maxWidthProperty());
 
         titleNode.addListener((prop, oldNode, newNode) -> {
             titleNodeContainer.getChildren().clear();
@@ -123,7 +128,6 @@ public class FXHeaderBar extends ToolBar
         closeButton.getStyleClass().add("window-control");
         closeButton.setOnAction((e) -> ((Stage)getScene().getWindow()).close());
 
-        HBox windowControls = new HBox();
         windowControls.getStyleClass().add("window-control-container");
         windowControls.visibleProperty().bind(showWindowControls);
         windowControls.getChildren().addAll(
@@ -267,6 +271,11 @@ public class FXHeaderBar extends ToolBar
         {
             UndecoratedStageMouseHandler undecoratedStageMouseHandler = new UndecoratedStageMouseHandler(w, this, 4);
         }
+
+        DoubleBinding maxWidth = w.widthProperty().subtract(40).subtract(leftBox.widthProperty()).subtract(rightBox.widthProperty()).subtract(windowControls.widthProperty());
+        titleNodeContainer.maxWidthProperty().bind(maxWidth);
+        titleNodeContainer.prefWidthProperty().bind(maxWidth);
+        titleNodeContainer.minWidthProperty().bind(maxWidth);
     }
 
     public Node getTitleNode()
