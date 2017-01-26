@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.HBox?>
+<?import me.nlowe.fxheaderbar.Spacer?>
+<?import javafx.scene.layout.Pane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<fx:root xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" type="javafx.scene.control.ToolBar"
+         stylesheets="style.css" styleClass="header-bar" minHeight="40" maxHeight="40" prefHeight="40">
+
+    <HBox fx:id="leftBox" />
+    <Spacer />
+    <Pane fx:id="titleNodeContainer">
+        <GridPane fx:id="defaultTitlePane" styleClass="title-pane" hgap="10" vgap="2" alignment="CENTER">
+            <columnConstraints>
+                <ColumnConstraints halignment="CENTER" />
+            </columnConstraints>
+
+            <Label fx:id="titleLabel" styleClass="title" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                <textOverrun>
+                    <OverrunStyle fx:constant="ELLIPSIS" />
+                </textOverrun>
+            </Label>
+        </GridPane>
+    </Pane>
+    <Spacer />
+    <HBox fx:id="rightBox" />
+    <HBox fx:id="windowControls" styleClass="window-control-container">
+        <Separator orientation="VERTICAL" />
+        <Button fx:id="minimizeButton" styleClass="window-control" onAction="#onMinimize"/>
+        <Button fx:id="maximizeButton" styleClass="maximize, window-control" onAction="#toggleMaximize"/>
+        <Button fx:id="closeButton" styleClass="window-control" onAction="#onClose"/>
+    </HBox>
+</fx:root>

@@ -19,16 +19,22 @@ import javafx.beans.property.*;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.HPos;
 import javafx.geometry.Orientation;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+
+import java.io.IOException;
 
 /**
  * A GTK+ like HeaderBar for the stage. Best used in the <code>top</code>
@@ -37,21 +43,11 @@ import javafx.stage.StageStyle;
  */
 public class FXHeaderBar extends ToolBar
 {
-    class Spacer extends Pane
-    {
-        Spacer()
-        {
-            HBox.setHgrow(this, Priority.ALWAYS);
-        }
-    }
+    @FXML private GridPane defaultTitlePane;
+    @FXML private HBox leftBox, rightBox, windowControls;
+    @FXML private Pane titleNodeContainer;
+    @FXML private Label titleLabel;
 
-    private final GridPane defaultTitlePane = new GridPane();
-
-    private final HBox leftBox = new HBox();
-    private final HBox rightBox = new HBox();
-    private final HBox windowControls = new HBox();
-
-    private final Pane titleNodeContainer = new Pane(defaultTitlePane);
     private final ObjectProperty<Node> titleNode = new SimpleObjectProperty<>(defaultTitlePane);
     private final StringProperty title = new SimpleStringProperty("Untitled Window");
     private final StringProperty subtitle = new SimpleStringProperty();
@@ -60,33 +56,28 @@ public class FXHeaderBar extends ToolBar
     private final BooleanProperty useLightIconsProp = new SimpleBooleanProperty(false);
     private final BooleanProperty useFullScreenInsteadOfMaximize = new SimpleBooleanProperty(true);
 
-    private final Button maximizeButton = new Button();
+    @FXML private Button minimizeButton, maximizeButton, closeButton;
 
     private Point2D dragOffset = null;
     private double windowWidthBeforeFullscreen = 0;
 
     public FXHeaderBar()
     {
-        setMinHeight(40);
-        setMaxHeight(40);
-        setPrefHeight(40);
-        getStyleClass().add("header-bar");
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getClassLoader().getResource("layout.fxml"));
+        fxmlLoader.setClassLoader(getClass().getClassLoader());
 
-        defaultTitlePane.getStyleClass().add("title-pane");
+        fxmlLoader.setRoot(this);
+        fxmlLoader.setController(this);
 
-        defaultTitlePane.setHgap(10);
-        defaultTitlePane.setVgap(2);
-        defaultTitlePane.setAlignment(Pos.CENTER);
+        try {
+            fxmlLoader.load();
+        } catch (IOException exception) {
+            throw new RuntimeException(exception);
+        }
 
-        ColumnConstraints centerColumn = new ColumnConstraints();
-        centerColumn.setHalignment(HPos.CENTER);
-        defaultTitlePane.getColumnConstraints().add(centerColumn);
-
-        Label titleLabel = new Label();
-        titleLabel.textProperty().bind(title);
-        titleLabel.getStyleClass().add("title");
-        titleLabel.setTextOverrun(OverrunStyle.WORD_ELLIPSIS);
-
+        title.addListener((prop, oldValue, newValue) -> {
+            titleLabel.setText(newValue);
+        });
         subtitle.addListener((prop, oldValue, newVlaue) -> {
             if(defaultTitlePane.getChildren().size() == 1)
             {
@@ -98,7 +89,6 @@ public class FXHeaderBar extends ToolBar
             }
         });
 
-        defaultTitlePane.add(titleLabel, 0, 0);
         defaultTitlePane.minWidthProperty().bind(titleNodeContainer.minWidthProperty());
         defaultTitlePane.prefWidthProperty().bind(titleNodeContainer.prefWidthProperty());
         defaultTitlePane.maxWidthProperty().bind(titleNodeContainer.maxWidthProperty());
@@ -108,43 +98,8 @@ public class FXHeaderBar extends ToolBar
             titleNodeContainer.getChildren().add(newNode);
         });
 
-        setTitleNode(defaultTitlePane);
-
-        Button minimizeButton = new Button();
-        minimizeButton.setId("fxheaderbar-windowctl-minimize");
-        minimizeButton.getStyleClass().add("window-control");
         minimizeButton.visibleProperty().bind(showMinimizeButton);
-        minimizeButton.setOnAction((e) -> {
-            Stage w = (Stage)getScene().getWindow();
-            w.setIconified(!w.isIconified());
-        });
-
-        maximizeButton.setId("fxheaderbar-windowctl-maximize");
-        maximizeButton.getStyleClass().addAll("maximize", "window-control");
-        maximizeButton.setOnAction((e) -> toggleMaximize());
-
-        Button closeButton = new Button();
-        closeButton.setId("fxheaderbar-windowctl-close");
-        closeButton.getStyleClass().add("window-control");
-        closeButton.setOnAction((e) -> ((Stage)getScene().getWindow()).close());
-
-        windowControls.getStyleClass().add("window-control-container");
         windowControls.visibleProperty().bind(showWindowControls);
-        windowControls.getChildren().addAll(
-                new Separator(Orientation.VERTICAL),
-                minimizeButton,
-                maximizeButton,
-                closeButton
-        );
-
-        getItems().addAll(
-                leftBox,
-                new Spacer(),
-                titleNodeContainer,
-                new Spacer(),
-                rightBox,
-                windowControls
-        );
 
         setOnMousePressed((e) -> {
             Stage w = (Stage)getScene().getWindow();
@@ -165,7 +120,7 @@ public class FXHeaderBar extends ToolBar
         setOnMouseClicked((e) -> {
             if(e.getClickCount() == 2 && e.getButton() == MouseButton.PRIMARY)
             {
-                toggleMaximize();
+                toggleMaximize(null);
             }
         });
 
@@ -183,8 +138,62 @@ public class FXHeaderBar extends ToolBar
                 closeButton.getStyleClass().add("white");
             }
         });
+    }
 
-        getStylesheets().add(getClass().getResource("/style.css").toExternalForm());
+    public FXHeaderBar(String title)
+    {
+        this();
+        setTitle(title);
+    }
+
+    public FXHeaderBar(String title, String subtitle)
+    {
+        this(title);
+        setSubtitle(subtitle);
+    }
+
+    public FXHeaderBar(Node node)
+    {
+        this();
+        setTitleNode(node);
+    }
+
+    /**
+     * Synchronize the stage title, min/maximize button icon, and add resize handles
+     * to the undecorated stage
+     *
+     * If {@link #useFullScreenInsteadOfMaximize} is true, also disable exiting full screen from the keyboard and turn
+     * off the hint.
+     *
+     * @param w The stage to sync to
+     */
+    public void syncToStage(Stage w)
+    {
+        w.titleProperty().bindBidirectional(title);
+
+        ChangeListener<Boolean> maximizeListener = (prop, oldValue, newValue) -> {
+            maximizeButton.getStyleClass().removeAll("maximize", "restore");
+            maximizeButton.getStyleClass().add(newValue ? "restore" : "maximize");
+            if(newValue) windowWidthBeforeFullscreen = w.getWidth();
+        };
+
+        w.fullScreenProperty().addListener(maximizeListener);
+        w.maximizedProperty().addListener(maximizeListener);
+
+        if(useFullScreenInsteadOfMaximize.getValue())
+        {
+            w.setFullScreenExitHint("");
+            w.setFullScreenExitKeyCombination(KeyCombination.NO_MATCH);
+        }
+        if(w.getStyle() == StageStyle.UNDECORATED)
+        {
+            UndecoratedStageMouseHandler undecoratedStageMouseHandler = new UndecoratedStageMouseHandler(w, this, 4);
+        }
+
+        DoubleBinding maxWidth = w.widthProperty().subtract(40).subtract(leftBox.widthProperty()).subtract(rightBox.widthProperty()).subtract(windowControls.widthProperty());
+        titleNodeContainer.maxWidthProperty().bind(maxWidth);
+        titleNodeContainer.prefWidthProperty().bind(maxWidth);
+        titleNodeContainer.minWidthProperty().bind(maxWidth);
     }
 
     private boolean isTechnicallyMaximized()
@@ -215,7 +224,15 @@ public class FXHeaderBar extends ToolBar
         }
     }
 
-    private void toggleMaximize()
+    @FXML
+    protected void onMinimize(ActionEvent e)
+    {
+        Stage w = (Stage)getScene().getWindow();
+        w.setIconified(!w.isIconified());
+    }
+
+    @FXML
+    protected void toggleMaximize(ActionEvent e)
     {
         Stage w = (Stage)getScene().getWindow();
 
@@ -229,53 +246,10 @@ public class FXHeaderBar extends ToolBar
         }
     }
 
-    public FXHeaderBar(String title)
+    @FXML
+    protected void onClose(ActionEvent e)
     {
-        this();
-        setTitle(title);
-    }
-
-    public FXHeaderBar(String title, String subtitle)
-    {
-        this(title);
-        setSubtitle(subtitle);
-    }
-
-    public FXHeaderBar(Node node)
-    {
-        this();
-        setTitleNode(node);
-    }
-
-    /**
-     * Synchronize the stage title, min/maximize button icon, and add resize handles
-     * to the undecorated stage
-     *
-     * @param w The stage to sync to
-     */
-    public void syncToStage(Stage w)
-    {
-        w.titleProperty().bindBidirectional(title);
-
-        ChangeListener<Boolean> maximizeListener = (prop, oldValue, newValue) -> {
-            maximizeButton.getStyleClass().removeAll("maximize", "restore");
-            maximizeButton.getStyleClass().add(newValue ? "restore" : "maximize");
-            if(newValue) windowWidthBeforeFullscreen = w.getWidth();
-        };
-
-        w.fullScreenProperty().addListener(maximizeListener);
-        w.maximizedProperty().addListener(maximizeListener);
-
-        w.setFullScreenExitHint("");
-        if(w.getStyle() == StageStyle.UNDECORATED)
-        {
-            UndecoratedStageMouseHandler undecoratedStageMouseHandler = new UndecoratedStageMouseHandler(w, this, 4);
-        }
-
-        DoubleBinding maxWidth = w.widthProperty().subtract(40).subtract(leftBox.widthProperty()).subtract(rightBox.widthProperty()).subtract(windowControls.widthProperty());
-        titleNodeContainer.maxWidthProperty().bind(maxWidth);
-        titleNodeContainer.prefWidthProperty().bind(maxWidth);
-        titleNodeContainer.minWidthProperty().bind(maxWidth);
+        ((Stage)getScene().getWindow()).close();
     }
 
     public Node getTitleNode()

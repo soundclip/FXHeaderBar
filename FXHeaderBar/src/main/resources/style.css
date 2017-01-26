@@ -17,12 +17,21 @@
     -fx-padding: 0;
 }
 
-#fxheaderbar-windowctl-minimize { -fx-graphic: url("/ic_remove_black_24dp_1x.png"); }
-#fxheaderbar-windowctl-maximize.maximize { -fx-graphic: url("/ic_fullscreen_black_24dp_1x.png"); }
-#fxheaderbar-windowctl-maximize.restore  { -fx-graphic: url("/ic_fullscreen_exit_black_24dp_1x.png"); }
-#fxheaderbar-windowctl-close { -fx-graphic: url("/ic_close_black_24dp_1x.png"); }
+.title {
+    -fx-font-weight: bold;
+    -fx-font-size: 1em;
+}
 
-#fxheaderbar-windowctl-minimize.white { -fx-graphic: url("/ic_remove_white_24dp_1x.png"); }
-#fxheaderbar-windowctl-maximize.white.maximize { -fx-graphic: url("/ic_fullscreen_white_24dp_1x.png"); }
-#fxheaderbar-windowctl-maximize.white.restore  { -fx-graphic: url("/ic_fullscreen_exit_white_24dp_1x.png"); }
-#fxheaderbar-windowctl-close.white { -fx-graphic: url("/ic_close_white_24dp_1x.png"); }
+.subtitle {
+    -fx-font-size: 0.85em;
+}
+
+#minimizeButton { -fx-graphic: url("/ic_remove_black_24dp_1x.png"); }
+#maximizeButton.maximize { -fx-graphic: url("/ic_fullscreen_black_24dp_1x.png"); }
+#maximizeButton.restore  { -fx-graphic: url("/ic_fullscreen_exit_black_24dp_1x.png"); }
+#closeButton { -fx-graphic: url("/ic_close_black_24dp_1x.png"); }
+
+#minimizeButton.white { -fx-graphic: url("/ic_remove_white_24dp_1x.png"); }
+#maximizeButton.white.maximize { -fx-graphic: url("/ic_fullscreen_white_24dp_1x.png"); }
+#maximizeButton.white.restore  { -fx-graphic: url("/ic_fullscreen_exit_white_24dp_1x.png"); }
+#closeButton.white { -fx-graphic: url("/ic_close_white_24dp_1x.png"); }
